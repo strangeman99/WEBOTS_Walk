@@ -26,7 +26,7 @@ def main():
     num_actions = 4
 
     def createModel():
-        # Look at changing this network to not use the camera
+        # Look at changing this network to not use the camera.
         # Network for Walking Simulation
         # Create input layer for the first input
         inputs_1 = layers.Input(shape=(512, 512, 4))
