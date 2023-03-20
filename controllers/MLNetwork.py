@@ -4,7 +4,6 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 from keras import layers
 import gym
-from CustomEnv import WalkingEnv
 
 
 # This is the model class that inherits from model
@@ -25,10 +24,13 @@ class model(tf.keras.Model, ABC):
 
     # This is called and has the two data streams separated
     def call(self, inputs, training=None, mask=None):
+        # Unpacking the camera and motors
         i1 = self.i1(inputs[0])
         i2 = self.i2(inputs[1])
         r = self.r(i2)
         x = layers.concatenate(i1, r)
+
+        # Convolution and dense layers
         x = self.c1(x)
         x = self.c2(x)
         x = self.c3(x)
@@ -85,7 +87,7 @@ class agent:
 
 
 def main():
-    # TODO This has to be changed so it actually points to the correct file
+    # TODO This has to be changed to actually point to the correct file
     env_name = 'WalkingEnv-v0'
     gym.envs.register(id=env_name, entry_point='CustomEnv:WalkingEnv')
     env = gym.make(env_name)
@@ -95,7 +97,7 @@ def main():
 
     for step in range(training_steps):
         done = False
-        state = env.reset()  # Make sure reset will work correctly
+        state = env.reset()  # Return the correct values here
         total_reward = 0
         rewards = []
         states = []
@@ -104,7 +106,7 @@ def main():
         # Looping until something breaks
         while not done:
             action = robot.act(state)
-            next_state, reward, done, _ = env.step(action)
+            next_state, reward, done, _ = env.step(action)  # Make sure this returns correctly
             rewards.append(reward)
             states.append(state)
             actions.append(action)

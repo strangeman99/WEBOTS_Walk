@@ -1,71 +1,73 @@
 """Control controller."""
+from abc import ABC
+import gym
+from webots.controller import Robot, Camera, Motor
+from gym.core import ActType, ObsType
+from gym.spaces import Tuple
 
-# You may need to import some classes of the controller module. Ex:
-#  from controller import Robot, Motor, DistanceSensor
-from controller import Robot
-from controller import Camera
-from controller import Motor
 
-class CustomEnv()
+# This is the main class that inherits from environments
+class CustomEnv(gym.Env, ABC):
+    # Constructor setting up sensors and motors
     def __init__(self):
-        #INIt accel
-        #init gyro
-        #init global position
-        #target pos, distance
+        # Init accel, gyro, global pos, target pos, camera, and dist
+        robot = Robot()
+
+        # Setting the position to the middle
+        robot_node = robot.getFromDef("ROBOTIS OP3")
+        self.position = [1, 0, 1]  # TODO Check the proper starting position
+        robot_node.setPosition(self.position)
+
         # get the time step of the current world.
         timestep = int(robot.getBasicTimeStep())
-        # create the Robot instance.
-        robot = Robot()
-        #variable to see the sensor name in the output
-        n = 0
-        devices_name = ["PelvYL", "PelvYR", "PelvL", "PelvR", "LegUpperL", "LegUpperR", "LegLowerL", "LegLowerR", "AnkleL", "AnkleR", "FootL", "FootR"]
-        sensors_name = ["PelvYLS", "PelvYRS", "PelvLS", "PelvRS", "LegUpperLS", "LegUpperRS", "LegLowerLS", "LegLowerRS", "AnkleLS", "AnkleRS", "FootLS", "FootRS"]
-        devices = []
-        sensors = []
-        #initialize devices
-        for name in devices_name:
-            devices.append(robot.getDevice(name))
-        robot.getDevice("Gyro")
-        robot.getDevice("Accelerometer")
-            #initialize sensors
-        for name in sensors_name:
-            sensors.append(robot.getDevice(name))
-            #enable sensors
-        for sens in sensors:
-            sens.enable(timestep)
 
-        #set the position for all the devices ( Position is the maximum angle of rotation)
+        # Setting the devices
+        # TODO Check the oder of these joints
+        motor_devices_name = ["PelvYL", "PelvYR", "PelvL", "PelvR", "LegUpperL", "LegUpperR", "LegLowerL", "LegLowerR",
+                              "AnkleL", "AnkleR", "FootL", "FootR"]
+        motor_sensors_name = ["PelvYLS", "PelvYRS", "PelvLS", "PelvRS", "LegUpperLS", "LegUpperRS", "LegLowerLS",
+                              "LegLowerRS", "AnkleLS", "AnkleRS", "FootLS", "FootRS"]
+        self.motor_devices = []
+        self.motor_sensors = []
 
-        devices[0].setPosition(2.82743)
-        Cam = robot.getDevice("Camera")
-        Cam.enable(timestep)
+        # initialize devices
+        for i, name in enumerate(motor_devices_name):
+            self.motor_devices.append(robot.getDevice(name))
+            self.motor_devices[i].setPosition(2.82743)
 
+        # initialize sensors
+        for name in motor_sensors_name:
+            self.motor_sensors.append(robot.getDevice(name))
+
+        # enable sensors
+        for sen in self.motor_sensors:
+            sen.enable(timestep)
+
+        # Setting the camera
+        self.cam = robot.getDevice("Camera")
+        self.cam.enable(timestep)
+
+        # Setting the gyro and accel
+        self.gyro = robot.getDevice("Gyro")
+        self.accel = robot.getDevice("Accelerometer")
+
+    # This resets the scene. Returns the starting position of everything
     def reset(self):
-            
-# You should insert a getDevice-like function in order to get the
-# instance of a device of the robot. Something like:
-#  motor = robot.getDevice('motorname')
-#  ds = robot.getDevice('dsname')
-#  ds.enable(timestep)
+        pass
 
-# Main loop:
-# - perform simulation steps until Webots is stopping the controller
-while robot.step(timestep) != -1:
-    # Read the sensors:
-    image = Cam.getImage()
-    for sens in sensors:
-        print(sens.getValue(), " - " + sensors_name[n])
-        n+=1
-        if sens == sensors[0]:
-            n = 0
-        
-    # Enter here functions to read sensor data, like:
-    #  val = ds.getValue()
+    # Executed at each time step
+    def step(self, action: ActType) -> Tuple[ObsType, float, bool, bool, dict]:
+        pass
 
-    # Process sensor data here.
+    # This determines if the simulation needs to be reset
+    def isDone(self):
+        pass
 
-    # Enter here functions to send actuator commands, like:
-    #  motor.setPosition(10.0)
-    pass
+    # This calculates the reward from the action
+    def rewardCalc(self):
+        pass
 
-# Enter here exit cleanup code.
+    # This function executes the desired action. Sets motor positions.
+    def takeAction(self):
+        pass
+
