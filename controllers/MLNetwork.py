@@ -88,7 +88,6 @@ class agent:
 
 
 def main():
-    # TODO This has to be changed to actually point to the correct file
     env_name = 'WalkingEnv-v0'
     gym.envs.register(id=env_name, entry_point='Control.Control:CustomEnv')
     env = gym.make(env_name)
