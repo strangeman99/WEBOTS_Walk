@@ -14,8 +14,8 @@ class model(tf.keras.Model, ABC):
         super().__init__()
         # This model architecture is up for debate
         self.i1 = layers.Input(shape=(512, 512, 4))
-        self.i2 = layers.Input(shape=(12, 4))  # TODO Shape has to include other sensors
-        self.r = layers.Reshape((48,))
+        self.i2 = layers.Input(shape=(18, 4))  # TODO Shape has to include other sensors
+        self.r = layers.Reshape((72,))
         self.c1 = layers.Conv2D(32, 8, strides=4, activation="relu")
         self.c2 = layers.Conv2D(64, 4, strides=2, activation="relu")
         self.c3 = layers.Conv2D(64, 3, strides=1, activation="relu")
