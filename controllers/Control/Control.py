@@ -142,7 +142,7 @@ class CustomEnv(gym.Env, ABC):
         # TODO figure out what radius and size to put
         # Setting the random objects to avoid
         self.play_radius = 100
-        self.max_obj_size = 3
+        self.max_obj_size = 1
         self.num_objects = 20
         self.objects = self.placeObjects(self.num_objects, self.play_radius, self.max_obj_size)
 
@@ -213,8 +213,7 @@ class CustomEnv(gym.Env, ABC):
                     pos_dif = True
                     objects_pos.add((pos_x, pos_y))
 
-            # TODO this has to be changed to the new object I created in webots
-            cur_obj = self.world.getFromDef("BOX")
+            cur_obj = self.world.getFromDef("box")
             cur_obj.getField("translation").setSFVec3f([pos_x, pos_y, 0])
 
             # Random size generated
