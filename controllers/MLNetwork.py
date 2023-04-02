@@ -106,7 +106,7 @@ def main():
         # Looping until something breaks
         while not done:
             action = robot.act(state)
-            next_state, reward, done, _ = env.step(action)  # Make sure this returns correctly
+            next_state, reward, done = env.step(action)  # Make sure this returns correctly
             rewards.append(reward)
             states.append(state)
             actions.append(action)
