@@ -1,15 +1,17 @@
 """Control controller."""
+import collections as col
 import math
 import random
 from abc import ABC
 from typing import Optional
-import numpy as np
-import collections as col
 
-import gym
 import cv2
-from gym.core import ActType, ObsType
+import gym
+import numpy as np
 from gym import spaces
+from gym.core import ActType
+from tensorflow import keras
+
 from controller import Supervisor, Robot
 
 
@@ -27,6 +29,15 @@ def anyOverlap(prev_points, cur_point, max_size) -> bool:
 class CustomEnv(gym.Env, ABC):
     # Constructor setting up sensors and motors
     def __init__(self):
+        # Reward parameters for the reward function. Tune during training
+        self.target_reward = 1.0
+        self.walking_reward = 5.0
+        self.collision_reward = -10.0
+        self.falling_reward = -10.0
+
+        # Load the walking critic model
+        self.critic = keras.models.load_model('controllers/Critic.h5')
+
         # Starting position of the robot
         self.start_pos = [0.0, 0.0, 0.285]
 
@@ -121,9 +132,8 @@ class CustomEnv(gym.Env, ABC):
         self.timestep = int(self.robot.getBasicTimeStep())
 
         # Setting the devices
-        # TODO Check the oder of these joints
-        motor_devices_name = ["PelvYL", "PelvYR", "PelvL", "PelvR", "LegUpperL", "LegUpperR", "LegLowerL", "LegLowerR",
-                              "AnkleL", "AnkleR", "FootL", "FootR"]
+        motor_devices_name = ["PelvR", "PelvYR", "LegUpperR", "PelvL", "PelvYL", "LegUpperL", "LegLowerR", "LegLowerL",
+                              "AnkleR", "FootR", "AnkleL", "FootL"]
         self.motor_devices = []
         self.motor_positions = []
 
@@ -268,10 +278,23 @@ class CustomEnv(gym.Env, ABC):
 
     # This calculates the reward from the action
     def rewardCalc(self):
+        # Getting closer to the target
+        cur_pos = self.robot_node.getPosition()
+        dist = math.sqrt(((cur_pos[0]-self.target[0])**2) + ((cur_pos[1]-self.target[1])**2))
+
+        # How close to a step it is. Outputs a 1 or 0
+        is_step = self.critic.predict()
+
+        # Any collisions
+
+        # Fell over
         pass
 
     # This function executes the desired action. Sets motor positions.
     def takeAction(self, action: ActType):
+        # Move the motors to their new positions
+
+        # Step the simulation
         pass
 
     # This gets an image from the camera
