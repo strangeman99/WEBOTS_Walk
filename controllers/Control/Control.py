@@ -11,8 +11,8 @@ import numpy as np
 from gym import spaces
 from gym.core import ActType
 from tensorflow import keras
-
 from controller import Supervisor, Robot
+import webots as wb
 
 
 # This checks for overlap of the new point on any point already created
@@ -24,6 +24,13 @@ def anyOverlap(prev_points, cur_point, max_size) -> bool:
 
     return False
 
+# Returns the norm of a vector
+def norm(v):
+  cur_sum = float(0)
+  for i in range(len(v)):
+    cur_sum += v[i]**2
+  return cur_sum** 0.5
+
 
 # This is the main class that inherits from environments
 class CustomEnv(gym.Env, ABC):
@@ -31,7 +38,7 @@ class CustomEnv(gym.Env, ABC):
     def __init__(self):
         # Reward parameters for the reward function. Tune during training
         self.target_reward = 1.0
-        self.walking_reward = 5.0
+        self.walking_reward = 10.0
         self.collision_reward = -10.0
         self.falling_reward = -10.0
 
@@ -52,15 +59,17 @@ class CustomEnv(gym.Env, ABC):
 
         # Motor constraints (Maybe change)
         self.begin_motor_pos = 0.0
-        self.motor_max_pos = np.pi
-        self.motor_min_pos = -np.pi
+        self.motor_max_pos_rad = np.pi
+        self.motor_min_pos_rad = -np.pi
+        self.motor_max_pos_deg = 359.99
+        self.motor_min_pos_deg = 0.0
         self.motor_num = 12
         self.obs_num = 4
 
         # The space containing all the motors
         self.mot_space = spaces.Box(
-            low=self.motor_min_pos,
-            high=self.motor_max_pos,
+            low=self.motor_min_pos_deg,
+            high=self.motor_max_pos_deg,
             shape=(self.motor_num,),
             dtype=np.float32
         )
@@ -113,8 +122,8 @@ class CustomEnv(gym.Env, ABC):
 
         # The action space for output. 12 motors
         self.action_space = spaces.Box(
-                low=self.motor_min_pos,
-                high=self.motor_max_pos,
+                low=self.motor_min_pos_rad,
+                high=self.motor_max_pos_rad,
                 shape=(self.motor_num,),
                 dtype=np.float32)
 
@@ -157,7 +166,7 @@ class CustomEnv(gym.Env, ABC):
         self.play_radius = 100
         self.max_obj_size = 1
         self.num_objects = 20
-        self.objects = self.placeObjects(self.num_objects, self.play_radius, self.max_obj_size)
+        self.objects, self.objects_pos = self.placeObjects(self.num_objects, self.play_radius, self.max_obj_size)
 
         # Target that the robot walks to
         self.target = (random.uniform(-1, 1) * self.play_radius, random.uniform(-1, 1) * self.play_radius)
@@ -206,6 +215,7 @@ class CustomEnv(gym.Env, ABC):
         return self.buffer
 
     # This randomly places objects
+    # TODO I don't think this will work yet
     def placeObjects(self, num_objects, max_radius, max_size):
         objects_pos = set()
         objects_pos.add((0, 0))  # To protect robot at start
@@ -226,7 +236,9 @@ class CustomEnv(gym.Env, ABC):
                     pos_dif = True
                     objects_pos.add((pos_x, pos_y))
 
-            cur_obj = self.world.getFromDef("box")
+            # Making a copy of the box node
+            # TODO might have to pass in the .proto file
+            cur_obj = # This has to set it to a copy
             cur_obj.getField("translation").setSFVec3f([pos_x, pos_y, 0])
 
             # Random size generated
@@ -235,12 +247,13 @@ class CustomEnv(gym.Env, ABC):
             size_z = random.uniform(0, 1) * max_size
             cur_obj.getField("size").setSFVec3f([size_x, size_y, size_z])
 
-            # Setting the name of the object
+            # Setting the name of the object and adding it to the world
             cur_obj.getField("name").setSFString("box"+str(i))
-
             objects.append(cur_obj)
+            # TODO How do I fix this?
+            self.world.getRoot().addChild()
 
-        return objects
+        return objects, objects_pos
 
     # Executed at each time step
     def step(self, action: ActType):
@@ -282,10 +295,12 @@ class CustomEnv(gym.Env, ABC):
         cur_pos = self.robot_node.getPosition()
         dist = math.sqrt(((cur_pos[0]-self.target[0])**2) + ((cur_pos[1]-self.target[1])**2))
 
-        # How close to a step it is. Outputs a 1 or 0
-        is_step = self.critic.predict()
+        # How close to a step it is. Outputs a 1 or 0 (sigmoid)
+        # TODO might have to change activation to softmax
+        is_step = self.critic.predict(self.criticDataPrep())
 
         # Any collisions
+        collision = anyOverlap(, )
 
         # Fell over
         pass
@@ -316,9 +331,8 @@ class CustomEnv(gym.Env, ABC):
 
     # This takes an observation of the environment
     def observe(self):
-        # TODO might read from the actual sensors
         observation = (self.takeImage(),
-                       [self.motor_devices[i].getTargetPosition() for i in range(self.motor_num)],
+                       self.getMotorPos(),
                        self.gyro.getValues(),
                        self.accel.getValues)
 
@@ -339,3 +353,31 @@ class CustomEnv(gym.Env, ABC):
             return True
 
         return False
+
+    # Gets data from the motors and covert to positive degrees
+    def getMotorPos(self):
+        # Take in data and convert to degrees
+        # TODO might read from the actual sensors
+        motors = [np.rad2deg(self.motor_devices[i].getTargetPosition()) for i in range(self.motor_num)]
+
+        # Convert all angles to positive
+        for i in range(len(motors)):
+            if motors[i] < 0:
+                motors[i] += 360.0
+
+        return motors
+
+    # Preps the data to be passed into the critic
+    def criticDataPrep(self):
+        # Grab motor positions
+        mot_obs = np.zeros((self.obs_num, self.motor_num))
+        for i, obs in enumerate(self.buffer):
+            mot_obs[i] = obs[1]
+
+        # Normalize the data
+        tmp = np.reshape(mot_obs, (self.obs_num * self.motor_num))
+        tmp_norm = norm(tmp)
+        mot_obs = mot_obs / tmp_norm
+
+        return mot_obs
+
