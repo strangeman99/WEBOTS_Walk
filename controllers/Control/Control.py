@@ -1,7 +1,9 @@
 """Control controller."""
 import collections as col
 import math
+import os.path
 import random
+import time
 from abc import ABC
 from typing import Optional
 
@@ -12,7 +14,6 @@ from gym import spaces
 from gym.core import ActType
 from tensorflow import keras
 from controller import Supervisor, Robot
-import webots as wb
 
 
 # This checks for overlap of the new point on any point already created
@@ -43,7 +44,9 @@ class CustomEnv(gym.Env, ABC):
         self.falling_reward = -10.0
 
         # Load the walking critic model
-        self.critic = keras.models.load_model('controllers/Critic.h5')
+        parent_dir = os.path.dirname(os.path.abspath(__file__))
+        critic_path = os.path.join(parent_dir, '..', 'Critic.h5')
+        self.critic = keras.models.load_model(critic_path)
 
         # Starting position of the robot
         self.start_pos = [0.0, 0.0, 0.285]
@@ -51,6 +54,7 @@ class CustomEnv(gym.Env, ABC):
         # This is a step maximum to prevent infinite loop
         self.max_step = 10000000
         self.cur_step = 0
+        self.step_pause = 0.001
 
         # For falling and collisions
         self.cancel_sim = False
@@ -144,6 +148,7 @@ class CustomEnv(gym.Env, ABC):
         motor_devices_name = ["PelvR", "PelvYR", "LegUpperR", "PelvL", "PelvYL", "LegUpperL", "LegLowerR", "LegLowerL",
                               "AnkleR", "FootR", "AnkleL", "FootL"]
         self.motor_devices = []
+        # TODO I haven't been using this. Change to position sensor
         self.motor_positions = []
 
         # initialize devices
@@ -165,7 +170,7 @@ class CustomEnv(gym.Env, ABC):
         # Setting the random objects to avoid
         self.play_radius = 100
         self.max_obj_size = 1
-        self.num_objects = 20
+        self.num_objects = 0  # For initial testing
         self.objects, self.objects_pos = self.placeObjects(self.num_objects, self.play_radius, self.max_obj_size)
 
         # Target that the robot walks to
@@ -238,7 +243,7 @@ class CustomEnv(gym.Env, ABC):
 
             # Making a copy of the box node
             # TODO might have to pass in the .proto file
-            cur_obj = # This has to set it to a copy
+            cur_obj = self.world.getFromDef("box")
             cur_obj.getField("translation").setSFVec3f([pos_x, pos_y, 0])
 
             # Random size generated
@@ -300,17 +305,28 @@ class CustomEnv(gym.Env, ABC):
         is_step = self.critic.predict(self.criticDataPrep())
 
         # Any collisions
-        collision = anyOverlap(, )
+        collision = anyOverlap(self.objects_pos, self.position, self.max_obj_size)
 
         # Fell over
-        pass
+        fallen = self.fellOver()
+
+        # Total reward
+        reward = (self.target_reward*(1/dist))+(self.walking_reward*is_step)+(self.collision_reward*collision)+(self.falling_reward*fallen)
+
+        return reward, fallen, collision
 
     # This function executes the desired action. Sets motor positions.
     def takeAction(self, action: ActType):
         # Move the motors to their new positions
+        for i, mot in enumerate(self.motor_devices):
+            mot.setPosition(action[i])
 
         # Step the simulation
-        pass
+        self.robot.step(self.timestep)
+        time.sleep(self.step_pause)
+
+        # Reset robot position
+        self.position = self.robot_node.getField("translation").value
 
     # This gets an image from the camera
     def takeImage(self):
