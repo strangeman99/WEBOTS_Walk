@@ -15,7 +15,6 @@ from gym.core import ActType
 from tensorflow import keras
 from controller import Supervisor, Robot
 
-
 # This checks for overlap of the new point on any point already created
 def anyOverlap(prev_points, cur_point, max_size) -> bool:
     for point in prev_points:
@@ -31,6 +30,24 @@ def norm(v):
   for i in range(len(v)):
     cur_sum += v[i]**2
   return cur_sum** 0.5
+
+# This is a testing function to print all nodes in the simulation
+def printAllChildren(root):
+    try:
+        node_field = root.getField("children")
+    except TypeError:
+        raise Exception("Root has no children")
+    else:
+        print(node_field)
+
+    # Get the number of nodes in the field
+    num_nodes = node_field.getCount()
+    print("Num nodes: " + str(num_nodes))
+
+    # Loop through all the nodes and print their names
+    for i in range(num_nodes):
+        node = node_field.getMFNode(i)
+        print(node.getName())
 
 
 # This is the main class that inherits from environments
@@ -132,17 +149,30 @@ class CustomEnv(gym.Env, ABC):
                 dtype=np.float32)
 
         # Init accel, gyro, global pos, target pos, camera, and dist
-        self.robot = Robot()
-        self.world = Supervisor()
+        try:
+            self.world = Supervisor()
+        except TypeError:
+            raise Exception("World not loaded")
 
         # Setting the position to the middle
-        self.robot_node = self.world.getFromDef("WEBOT")
-        self.position = self.start_pos
-        position_field = self.robot_node.getField("translation")
-        position_field.setSFVec3f(self.position)
+        try:
+            self.robot_node = self.world.getFromDef("WEBOT")
+        except TypeError:
+            raise Exception("Robot node not found")
+        else:
+            self.position = self.start_pos
+            position_field = self.robot_node.getField("translation")
+            position_field.setSFVec3f(self.position)
 
         # get the time step of the current world.
-        self.timestep = int(self.robot.getBasicTimeStep())
+        self.timestep = int(self.world.getBasicTimeStep())
+
+        self.robot_node = None
+        try:
+            self.robot = Robot()
+            self.robot = self.robot.created
+        except TypeError:
+            raise Exception("Robot not loaded")
 
         # Setting the devices
         motor_devices_name = ["PelvR", "PelvYR", "LegUpperR", "PelvL", "PelvYL", "LegUpperL", "LegLowerR", "LegLowerL",
@@ -159,13 +189,13 @@ class CustomEnv(gym.Env, ABC):
 
         # Setting the camera
         self.cam = self.robot.getDevice("Camera")
-        self.cam.enable(self.timestep)
+        #self.cam.enable(self.timestep)
 
         # Setting the gyro and accel
         self.gyro = self.robot.getDevice("Gyro")
-        self.gyro.enable(self.timestep)
+        #self.gyro.enable(self.timestep)
         self.accel = self.robot.getDevice("Accelerometer")
-        self.accel.enable(self.timestep)
+        #self.accel.enable(self.timestep)
 
         # Setting the random objects to avoid
         self.play_radius = 100
@@ -185,6 +215,7 @@ class CustomEnv(gym.Env, ABC):
     ):
 
         # Setting the position to the middle
+        self.switchRobotReference()
         self.position = self.start_pos
         position_field = self.robot_node.getField("translation")
         position_field.setSFVec3f(self.position)
@@ -396,4 +427,24 @@ class CustomEnv(gym.Env, ABC):
         mot_obs = mot_obs / tmp_norm
 
         return mot_obs
+
+    # The changes reference to the robot. Can't have two references (node or robot)
+    def switchRobotReference(self):
+        if (self.robot is None) and (self.robot_node is not None):
+            self.robot_node = None
+            try:
+                self.robot = Robot()
+                self.robot = self.robot.created
+            except TypeError:
+                raise Exception("Robot not loaded")
+
+        elif (self.robot is not None) and (self.robot_node is None):
+            self.robot = None
+            try:
+                self.robot_node = self.world.getFromDef("WEBOT")
+            except TypeError:
+                raise Exception("Robot node not found")
+
+        else:
+            print("Error switching robot references")
 
