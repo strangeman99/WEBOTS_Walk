@@ -13,8 +13,7 @@ import numpy as np
 from gym import spaces
 from gym.core import ActType
 from tensorflow import keras
-from controller import Robot
-from SimulationControl import SimControl
+from controller import Supervisor, Robot
 
 # This checks for overlap of the new point on any point already created
 def anyOverlap(prev_points, cur_point, max_size) -> bool:
@@ -150,10 +149,25 @@ class CustomEnv(gym.Env, ABC):
                 dtype=np.float32)
 
         # Init accel, gyro, global pos, target pos, camera, and dist
-        self.position = self.start_pos
-        self.sim = SimControl()
-        self.sim.setRobotPosition(self.position)
+        try:
+            self.world = Supervisor()
+        except TypeError:
+            raise Exception("World not loaded")
 
+        # Setting the position to the middle
+        try:
+            self.robot_node = self.world.getFromDef("WEBOT")
+        except TypeError:
+            raise Exception("Robot node not found")
+        else:
+            self.position = self.start_pos
+            position_field = self.robot_node.getField("translation")
+            position_field.setSFVec3f(self.position)
+
+        # get the time step of the current world.
+        self.timestep = int(self.world.getBasicTimeStep())
+
+        self.robot_node = None
         try:
             self.robot = Robot()
             self.robot = self.robot.created

@@ -4,6 +4,7 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 from keras import layers
 import gym
+from Control.Control import CustomEnv
 
 
 # This is the model class that inherits from model
@@ -88,7 +89,7 @@ class agent:
 
 def main():
     env_name = 'WalkingEnv-v0'
-    gym.envs.register(id=env_name, entry_point='Control.RobotControl:CustomEnv')
+    gym.envs.register(id=env_name, entry_point='Control.Control:CustomEnv')
     env = gym.make(env_name)
 
     robot = agent()
