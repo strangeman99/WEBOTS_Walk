@@ -2,6 +2,7 @@
 import collections as col
 import math
 import os.path
+import os
 import random
 import time
 from abc import ABC
@@ -15,6 +16,7 @@ from gym.core import ActType
 from tensorflow import keras
 from controller import Robot
 from SimulationControl import SimControl
+os.environ["WEBOTS_CONTROLLER_URL"] = "ipc://1234/WEBOT"
 
 # This checks for overlap of the new point on any point already created
 def anyOverlap(prev_points, cur_point, max_size) -> bool:
