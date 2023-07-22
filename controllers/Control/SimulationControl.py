@@ -1,6 +1,4 @@
-import os
 from controller import Supervisor
-os.environ["WEBOTS_CONTROLLER_URL"] = "ipc://1234/robot"
 
 # This is a secondary controller to control the simulation
 class SimControl:
