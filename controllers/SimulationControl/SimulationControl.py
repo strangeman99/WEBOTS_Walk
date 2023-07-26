@@ -1,33 +1,29 @@
-from controller import Supervisor, Node
-
+from math import sqrt
+from controller import Supervisor
 import random
 
+TIME_STEP = 32
 
-def spawn_cube(supervisor: Supervisor):
-    # Load the cube prototype
-    cube_proto = supervisor.getFromDef("CUBE")
+supervisor = Supervisor()
 
-    # Create a new instance of the cube
-    cube = supervisor.cloneProto(cube_proto)#????
+# get handle to robot's translation field
+robot_node = supervisor.getFromDef("SUPER")
+trans_field = robot_node.getField("translation")
+rot_field = robot_node.getField("rotation")
 
-    # Randomly position the cube within the simulation world
-    x = random.uniform(-5, 5)
-    y = random.uniform(0.1, 2)
-    z = random.uniform(-5, 5)
-    cube.getField("translation").setSFVec3f([x, y, z])
+while supervisor.step(TIME_STEP) != -1:
 
+    #may     compute travelled distance
+    #need   values = trans_field.getSFVec3f()
+    #later  dist = sqrt(values[0] * values[0] + values[2] * values[2])
+            #print("a=%d, b=%d -> dist=%g" % (a, b, dist))
 
-if __name__ == "__main__":
-    # Create the Webots supervisor
-    supervisor = Supervisor()
-
-    # Enable the simulation
-    supervisor.simulationSetMode(Supervisor.SIMULATION_MODE_REAL_TIME)
-
-    # Spawn 10 cubes
-    for _ in range(10):
-        spawn_cube(supervisor)
-
-    # Run the simulation
-    while supervisor.step(Supervisor.TIME_STEP) != -1:
-        pass
+        # set the cubes position
+    rndx = random.uniform(-5, 5)
+    rndy = random.uniform(-5, 5)
+    POS = [rndx, rndy, 0]
+    trans_field.setSFVec3f(POS)
+    rot = random.uniform(0, 6.28319)
+    angle = [0, 0, 1, rot]
+    rot_field.setSFRotation(angle)
+    quit()
