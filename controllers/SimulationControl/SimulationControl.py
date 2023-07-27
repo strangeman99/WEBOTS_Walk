@@ -26,4 +26,3 @@ while supervisor.step(TIME_STEP) != -1:
     rot = random.uniform(0, 6.28319)
     angle = [0, 0, 1, rot]
     rot_field.setSFRotation(angle)
-    quit()

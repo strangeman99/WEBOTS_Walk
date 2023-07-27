@@ -15,7 +15,7 @@ from gym import spaces
 from gym.core import ActType
 from tensorflow import keras
 from controller import Robot
-from SimulationControl import SimControl
+#from SimulationControl import SimControl
 os.environ["WEBOTS_CONTROLLER_URL"] = "ipc://1234/WEBOT"
 
 # This checks for overlap of the new point on any point already created
@@ -153,8 +153,8 @@ class CustomEnv(gym.Env, ABC):
 
         # Init accel, gyro, global pos, target pos, camera, and dist
         self.position = self.start_pos
-        self.sim = SimControl()
-        self.sim.setRobotPosition(self.position)
+        #self.sim = SimControl()
+       # self.sim.setRobotPosition(self.position)
 
         try:
             self.robot = Robot()
@@ -203,10 +203,10 @@ class CustomEnv(gym.Env, ABC):
     ):
 
         # Setting the position to the middle
-        self.switchRobotReference()
+        #self.switchRobotReference()
         self.position = self.start_pos
-        position_field = self.robot_node.getField("translation")
-        position_field.setSFVec3f(self.position)
+       # position_field = self.robot_node.getField("translation")
+       # position_field.setSFVec3f(self.position)
 
         # Resetting motors
         for i in range(len(self.motor_devices)):
