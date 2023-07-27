@@ -18,6 +18,9 @@ from controller import Robot
 #from SimulationControl import SimControl
 os.environ["WEBOTS_CONTROLLER_URL"] = "ipc://1234/WEBOT"
 
+#Checking the memory usage
+from memory_profiler import profile
+
 # This checks for overlap of the new point on any point already created
 def anyOverlap(prev_points, cur_point, max_size) -> bool:
     for point in prev_points:
@@ -51,7 +54,6 @@ def printAllChildren(root):
     for i in range(num_nodes):
         node = node_field.getMFNode(i)
         print(node.getName())
-
 
 # This is the main class that inherits from environments
 class CustomEnv(gym.Env, ABC):
@@ -159,6 +161,7 @@ class CustomEnv(gym.Env, ABC):
         try:
             self.robot = Robot()
             self.robot = self.robot.created
+            self.timestep = int(self.robot.basic_time_step)
         except TypeError:
             raise Exception("Robot not loaded")
 
@@ -219,9 +222,9 @@ class CustomEnv(gym.Env, ABC):
 
         # Resetting sensors
         self.gyro.disable()
-        self.gyro.enable()
+        self.gyro.enable(self.timestep)
         self.accel.disable()
-        self.accel.disable()
+        self.accel.enable(self.timestep)
 
         # Resetting map and target
         for obj in self.objects:
@@ -349,7 +352,7 @@ class CustomEnv(gym.Env, ABC):
 
     # This gets an image from the camera
     def takeImage(self):
-        camera_data = self.cam.getImage()
+        camera_data = self.cam.image
 
         # Convert to grayscale and resize to 512x512
         # TODO check if there is an actual problem with this
