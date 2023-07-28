@@ -14,12 +14,12 @@ import numpy as np
 from gym import spaces
 from gym.core import ActType
 from tensorflow import keras
-from controller import Robot
+from controller import Robot, Camera
 #from SimulationControl import SimControl
 os.environ["WEBOTS_CONTROLLER_URL"] = "ipc://1234/WEBOT"
 
 #Checking the memory usage
-from memory_profiler import profile
+#from memory_profiler import profile
 
 # This checks for overlap of the new point on any point already created
 def anyOverlap(prev_points, cur_point, max_size) -> bool:
@@ -180,13 +180,13 @@ class CustomEnv(gym.Env, ABC):
 
         # Setting the camera
         self.cam = self.robot.getDevice("Camera")
-        #self.cam.enable(self.timestep)
+        self.cam.enable(self.timestep)
 
         # Setting the gyro and accel
         self.gyro = self.robot.getDevice("Gyro")
-        #self.gyro.enable(self.timestep)
+        self.gyro.enable(self.timestep)
         self.accel = self.robot.getDevice("Accelerometer")
-        #self.accel.enable(self.timestep)
+        self.accel.enable(self.timestep)
 
         # Setting the random objects to avoid
         self.play_radius = 100
@@ -352,7 +352,7 @@ class CustomEnv(gym.Env, ABC):
 
     # This gets an image from the camera
     def takeImage(self):
-        camera_data = self.cam.image
+        camera_data = self.cam.getImage()
 
         # Convert to grayscale and resize to 512x512
         # TODO check if there is an actual problem with this
