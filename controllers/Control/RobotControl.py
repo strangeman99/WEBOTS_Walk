@@ -181,6 +181,8 @@ class CustomEnv(gym.Env, ABC):
         # Setting the camera
         self.cam = self.robot.getDevice("Camera")
         self.cam.enable(self.timestep)
+        self.rawImage = self.cam.getImage
+        self.image = self.convertImage()
 
         # Setting the gyro and accel
         self.gyro = self.robot.getDevice("Gyro")
@@ -351,13 +353,12 @@ class CustomEnv(gym.Env, ABC):
         self.position = self.robot_node.getField("translation").value
 
     # This gets an image from the camera
-    def takeImage(self):
-        camera_data = self.cam.getImage()
-
-        # Convert to grayscale and resize to 512x512
-        # TODO check if there is an actual problem with this
-        camera_data = cv2.cvtColor(camera_data, cv2.COLOR_RGB2GRAY)
-        camera_data = cv2.resize(camera_data, (512, 512))
+    def convertImage(self):
+        camera_data = np.empty(shape=(self.cam_fidelity, self.cam_fidelity), dtype='float')
+        # Convert image to gray
+        for r in range(self.cam_fidelity):
+            for c in range(self.cam_fidelity):
+                camera_data[r, c] = Camera.imageGetGray(self.rawImage, self.cam_fidelity, r, c)
 
         # Rescale pixel values to be between 0 and 1
         camera_data = camera_data.astype(np.float32) / 255.0
@@ -369,7 +370,7 @@ class CustomEnv(gym.Env, ABC):
 
     # This takes an observation of the environment
     def observe(self):
-        observation = (self.takeImage(),
+        observation = (self.image,
                        self.getMotorPos(),
                        self.gyro.getValues(),
                        self.accel.getValues)
