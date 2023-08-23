@@ -14,8 +14,7 @@ import numpy as np
 from gym import spaces
 from gym.core import ActType
 from tensorflow import keras
-from controller import Robot, Camera
-#from SimulationControl import SimControl
+from controller import Robot, Camera, Supervisor
 os.environ["WEBOTS_CONTROLLER_URL"] = "ipc://1234/WEBOT"
 
 #Checking the memory usage
@@ -69,6 +68,30 @@ class CustomEnv(gym.Env, ABC):
         parent_dir = os.path.dirname(os.path.abspath(__file__))
         critic_path = os.path.join(parent_dir, '..', 'Critic.h5')
         self.critic = keras.models.load_model(critic_path)
+
+        # initialize the supervisor
+        supervisor = Supervisor()
+
+        # get handle to robot's translation field
+        boxes_node = supervisor.getFromDef("boxs")
+        trans_field = boxes_node.getField("translation")
+        rot_field = boxes_node.getField("rotation")
+
+        # while supervisor.step(TIME_STEP) != -1:
+
+        # may     compute travelled distance
+        # need   values = trans_field.getSFVec3f()
+        # later  dist = sqrt(values[0] * values[0] + values[2] * values[2])
+        # print("a=%d, b=%d -> dist=%g" % (a, b, dist))
+
+        # set the cubes position
+        rndx = random.uniform(-5, 5)
+        rndy = random.uniform(-5, 5)
+        pos = [rndx, rndy, 0]
+        trans_field.setSFVec3f(pos)
+        rot = random.uniform(0, 6.28319)
+        angle = [0, 0, 1, rot]
+        rot_field.setSFRotation(angle)
 
         # Starting position of the robot
         self.start_pos = [0.0, 0.0, 0.285]
@@ -158,12 +181,14 @@ class CustomEnv(gym.Env, ABC):
         #self.sim = SimControl()
        # self.sim.setRobotPosition(self.position)
 
-        try:
+      # TODO this solves the problem with 2 robot instances
+        self.robot = supervisor.getFromDef("WEBOT")
+        '''try:
             self.robot = Robot()
             self.robot = self.robot.created
             self.timestep = int(self.robot.basic_time_step)
         except TypeError:
-            raise Exception("Robot not loaded")
+            raise Exception("Robot not loaded")'''
 
         # Setting the devices
         motor_devices_name = ["PelvR", "PelvYR", "LegUpperR", "PelvL", "PelvYL", "LegUpperL", "LegLowerR", "LegLowerL",

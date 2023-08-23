@@ -7,9 +7,9 @@ TIME_STEP = 16
 supervisor = Supervisor()
 
 # get handle to robot's translation field
-robot_node = supervisor.getFromDef("SUPER")
-trans_field = robot_node.getField("translation")
-rot_field = robot_node.getField("rotation")
+boxes_node = supervisor.getFromDef("boxs")
+trans_field = boxes_node.getField("translation")
+rot_field = boxes_node.getField("rotation")
 
 #while supervisor.step(TIME_STEP) != -1:
 
