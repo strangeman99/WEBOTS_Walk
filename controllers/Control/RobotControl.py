@@ -199,7 +199,7 @@ class CustomEnv(gym.Env, ABC):
 
         # initialize devices
         for i, name in enumerate(motor_devices_name):
-            self.motor_devices.append(self.robot.getDevice(name))
+            self.motor_devices.append(supervisor.getFromDef(name))
             self.motor_devices[i].setPosition(self.begin_motor_pos)
             self.motor_positions.append(self.begin_motor_pos)
 
